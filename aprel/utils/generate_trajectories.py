@@ -35,31 +35,34 @@ def generate_trajectories_randomly(env: Environment,
 
     Returns:
         TrajectorySet: A set of :py:attr:`num_trajectories` randomly generated trajectories.
-        
+
     Raises:
         AssertionError: if :py:attr:`restore` is true, but no :py:attr:`file_name` is given.
     """
-    assert(not (file_name is None and restore)), 'Trajectory set cannot be restored, because no file_name is given.'
+    assert (not (file_name is None and restore)
+            ), 'Trajectory set cannot be restored, because no file_name is given.'
     max_episode_length = np.inf if max_episode_length is None else max_episode_length
     if restore:
         try:
             with open('aprel_trajectories/' + file_name + '.pkl', 'rb') as f:
                 trajectories = pickle.load(f)
         except:
-            warnings.warn('Ignoring restore=True, because \'aprel_trajectories/' + file_name + '.pkl\' is not found.')
+            warnings.warn('Ignoring restore=True, because \'aprel_trajectories/' +
+                          file_name + '.pkl\' is not found.')
             trajectories = TrajectorySet([])
         if not headless:
             for traj_no in range(trajectories.size):
                 if trajectories[traj_no].clip_path is None or not os.path.isfile(trajectories[traj_no].clip_path):
-                    warnings.warn('Ignoring restore=True, because headless=False and some trajectory clips are missing.')
+                    warnings.warn(
+                        'Ignoring restore=True, because headless=False and some trajectory clips are missing.')
                     trajectories = TrajectorySet([])
                     break
     else:
         trajectories = TrajectorySet([])
-    
+
     if not os.path.exists('aprel_trajectories'):
         os.makedirs('aprel_trajectories')
-    
+
     if trajectories.size >= num_trajectories:
         trajectories = TrajectorySet(trajectories[:num_trajectories])
     else:
@@ -69,25 +72,30 @@ def generate_trajectories_randomly(env: Environment,
         env.action_space.seed(seed)
         for traj_no in range(trajectories.size, num_trajectories):
             traj = []
-            obs = env.reset()
+            obs, _ = env.reset()
+
             if env_has_rgb_render:
                 try:
-                    frames = [np.uint8(env.render(mode='rgb_array'))]
-                except:
+                    frames = [np.uint8(env.render())]
+                except Exception as e:
+                    print(e)
                     env_has_rgb_render = False
             done = False
             t = 0
             while not done and t < max_episode_length:
                 act = env.action_space.sample()
-                traj.append((obs,act))
-                obs, _, done, _ = env.step(act)
+                traj.append((obs, act))
+                obs, _, terminated, truncated, _ = env.step(act)
+                done = terminated or truncated
                 t += 1
                 if env_has_rgb_render:
-                    frames.append(np.uint8(env.render(mode='rgb_array')))
+                    frames.append(np.uint8(env.render()))
+            # print('traj: ', traj)
             traj.append((obs, None))
             if env_has_rgb_render:
                 clip = ImageSequenceClip(frames, fps=30)
-                clip_path = 'aprel_trajectories/clips/' + file_name + '_' + str(traj_no) + '.mp4'
+                clip_path = 'aprel_trajectories/clips/' + \
+                    file_name + '_' + str(traj_no) + '.mp4'
                 clip.write_videofile(clip_path, audio=False)
             else:
                 clip_path = None

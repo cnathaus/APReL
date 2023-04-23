@@ -1,19 +1,20 @@
 """Environment-related modules."""
 
 from typing import Callable
-import gym
+from robosuite.wrappers import Wrapper
 
 
-class Environment:
+# class Environment:
+class Environment(Wrapper):
     """
     This is a wrapper around an OpenAI Gym environment, so that
     we can store the features function along with the environment itself.
-    
+
     Parameters:
         env (gym.Env): An OpenAi Gym environment.
         features (Callable):  Given a :class:`.Trajectory`, this function
             must return a :class:`numpy.array` of features.
-    
+
     Attributes:
         env (gym.Env): The wrapped environment.
         features (Callable): Features function.
@@ -26,20 +27,24 @@ class Environment:
         close (Callable): Inherits from :py:attr:`env`, if it exists; None otherwise.
         close_exists (bool): True if :py:attr:`close` exists.
     """
-    def __init__(self, env: gym.Env, feature_func: Callable):
+
+    def __init__(self, env, feature_func: Callable):
+
+        super().__init__(env)
+
         self.env = env
         self.features = feature_func
 
         # Mirror the main functionality
-        self.action_space = self.env.action_space
-        self.observation_space = self.env.observation_space
-        self.reset = self.env.reset
-        self.step = self.env.step
+        # self.action_space = self.env.action_space
+        # self.observation_space = self.env.observation_space
+        # self.reset = self.env.reset
+        # self.step = self.env.step
 
         # Mirror the render function only if it exists
-        self.render_exists = callable(getattr(self.env, "render", None))
-        self.render = self.env.render if self.render_exists else None
+        # self.render_exists = callable(getattr(self.env, "render", None))
+        # self.render = self.env.render if self.render_exists else None
 
         # Mirror the close function only if it exists
-        self.close_exists = callable(getattr(self.env, "close", None))
-        self.close = self.env.close if self.close_exists else None
+        # self.close_exists = callable(getattr(self.env, "close", None))
+        # self.close = self.env.close if self.close_exists else None

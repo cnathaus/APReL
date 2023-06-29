@@ -4,7 +4,7 @@ from typing import List, Tuple, Union
 import numpy as np
 from moviepy.editor import VideoFileClip
 
-from aprel.basics import Environment
+# from aprel.basics import Environment
 
 
 class Trajectory:
@@ -29,32 +29,34 @@ class Trajectory:
 
     def __init__(
         self,
-        env: Environment,
-        trajectory: List[Tuple[np.array, np.array]],
+        joint_trajectory: List[np.array],
+        gripper_trajectory: List[np.array],
+        eef_positions: List[np.array] = None,
+        eef_quats: List[np.array] = None,
         clip_path: str = None,
-        goal=None,
-        joint_states=None,
-        eef_traj=None,
     ):
-        self.trajectory = trajectory
+        self.joint_trajectory = joint_trajectory
+        self.gripper_trajectory = gripper_trajectory
         # goal is the goal pose, we just need the position
-        goal_pos = goal[0:3]
-        # convert the table height to robot base frame
-        table_height = env.table_offset[2] - env.base_position[2]
-        self.features = env.features(trajectory, goal_pos, table_height)
+        # goal_pos = goal[0:3]
+        # # convert the table height to robot base frame
+        # table_height = env.table_offset[2] - env.base_position[2]
+        # self.features = env.features(trajectory, goal_pos, table_height)
         self.clip_path = clip_path
-        self.goal = goal
-        self.joint_states = joint_states
-        self.eef_traj = eef_traj
+        # self.goal = goal
+        self.eef_positions = eef_positions
+        self.eef_quats = eef_quats
+
+        self.features = None
 
     def __getitem__(self, t: int) -> Tuple[np.array, np.array]:
         """Returns the state-action pair at time step t of the trajectory."""
-        return self.trajectory[t]
+        return self.joint_trajectory[t]
 
     @property
     def length(self) -> int:
         """The length of the trajectory, i.e., the number of time steps in the trajectory."""
-        return len(self.trajectory)
+        return len(self.joint_trajectory)
 
     def visualize(self):
         """
@@ -67,9 +69,8 @@ class Trajectory:
             clip.preview(fps=30)
             clip.close()
         else:
-            print("Headless mode is on. Printing the trajectory information.")
+            print("Headless mode is on.")
             # print(self.trajectory)
-            print("Features for this trajectory are: " + str(self.features))
 
 
 class TrajectorySet:
@@ -108,6 +109,7 @@ class TrajectorySet:
         """The number of trajectories in the set."""
         return len(self.trajectories)
 
+    # TODO: not working anymore because features not part of trajectory anymore
     def append(self, new_trajectory: Trajectory):
         """Appends a new trajectory to the set."""
         self.trajectories.append(new_trajectory)

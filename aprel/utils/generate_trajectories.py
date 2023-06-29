@@ -58,12 +58,12 @@ def generate_trajectories_randomly(
     assert not (
         file_name is None and restore
     ), "Trajectory set cannot be restored, because no file_name is given."
-    max_episode_length = 20
+    max_episode_length = 20  # TODO: modify this
     if restore:
         try:
             with open("aprel_trajectories/" + file_name + ".pkl", "rb") as f:
                 trajectories = pickle.load(f)
-        except:
+        except FileNotFoundError:
             warnings.warn(
                 "Ignoring restore=True, because 'aprel_trajectories/"
                 + file_name
@@ -154,12 +154,12 @@ def generate_trajectories_randomly(
 
                 # obs, _, terminated, truncated, _ = env.step(act)
                 obs, _, done, _ = env.step(act)
-                #goal_dist = obs[:3]
+                # goal_dist = obs[:3]
                 eef_pos = obs[:3] - env.base_position
-                #traj.append((goal_dist, ws_action))
+                # traj.append((goal_dist, ws_action))
                 traj.append((eef_pos, ws_action))
                 # image = obs[3:].reshape(camera_height, camera_width, 3)
-                joint_state = obs[3: 3 + 7]
+                joint_state = obs[3 : 3 + 7]
                 joint_states.append(joint_state)
                 # done = terminated or truncated
                 t += 1
@@ -197,7 +197,6 @@ def generate_trajectories_randomly(
                     traj,
                     clip_path,
                     goal=goal_pose,
-                    joint_states=joint_states,
                     eef_traj=eef_traj,
                 )
             )

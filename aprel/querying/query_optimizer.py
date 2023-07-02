@@ -248,10 +248,10 @@ class QueryOptimizerDiscreteTrajectorySet(QueryOptimizer):
                 best_batch = [initial_query.copy() for _ in range(batch_size)]
                 for i in range(batch_size):
                     rnd_idx = np.random.choice(
-                            self.trajectory_set.size,
-                            size=initial_query.K,
-                            replace=False,
-                        )
+                        self.trajectory_set.size,
+                        size=initial_query.K,
+                        replace=False,
+                    )
                     best_batch[i].slate = self.trajectory_set[rnd_idx]
                     print("randomly picked trajectory ids: ", rnd_idx)
                 return best_batch, np.array([1.0 for _ in range(batch_size)])

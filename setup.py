@@ -19,7 +19,7 @@ setup(
         "numpy>=1.8.0",
         "moviepy>=1.0.0",
         "scipy",
-        "gym",
+        "gymnasium",
         "pygame"
     ],
     eager_resources=['*'],

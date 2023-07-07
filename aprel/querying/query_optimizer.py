@@ -347,7 +347,10 @@ class QueryOptimizerDiscreteTrajectorySet(QueryOptimizer):
                 best_batch = [initial_query.copy() for _ in range(batch_size)]
                 for i in range(batch_size):
                     best_batch[i].slate = self.trajectory_set[subsets[inds[i]]]
-                return best_batch, vals[inds]
+                # return best_batch, vals[inds]
+                return best_batch, vals
+
+            # TODO: add mutual information query pool instead of for trajectory set
 
             elif acquisition_func is disagreement and isinstance(
                 belief, SamplingBasedBelief

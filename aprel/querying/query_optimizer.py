@@ -335,6 +335,7 @@ class QueryOptimizerDiscreteTrajectorySet(QueryOptimizer):
                         "The number of possible queries is smaller than the batch size. Automatically reducing the batch size."
                     )
                 vals = []
+                # TODO: add vectorization from inquire here instead of for loop
                 for ids in subsets:
                     curr_query = initial_query.copy()
                     curr_query.slate = self.trajectory_set[ids]

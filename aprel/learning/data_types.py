@@ -102,7 +102,7 @@ class Demonstration(QueryWithResponse):
     def __init__(self, trajectory: Trajectory, query: DemonstrationQuery = None):
         # It is not consistent to put the query as the second argument,
         # but let's keep it because the demonstrations are only passively collected.
-        initial_state, _ = trajectory[0]
+        initial_state = trajectory[0]
         if query is None:
             query = DemonstrationQuery(initial_state)
         else:

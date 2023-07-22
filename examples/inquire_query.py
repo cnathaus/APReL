@@ -4,6 +4,8 @@ import gym
 from aprel.querying.inquire import Inquire
 from aprel.learning.inquire_learning import InquireLearning
 import time
+import itertools
+import matplotlib.pyplot as plt
 
 
 def feature_func(traj):
@@ -16,7 +18,6 @@ def feature_func(traj):
         features: a numpy vector corresponding the features of the trajectory
     """
     states = np.array([pair[0] for pair in traj])
-    actions = np.array([pair[1] for pair in traj[:-1]])
     min_pos, max_pos = states[:, 0].min(), states[:, 0].max()
     mean_speed = np.abs(states[:, 1]).mean()
     mean_vec = [-0.703, -0.344, 0.007]
@@ -35,7 +36,6 @@ def find_next_queries_inquire(belief, trajectory_set):
 
 
 def update_belief_inquire(queries, responses, belief, true_user):
-    is_simulated_user = True
     curr_w = np.array([sample["weights"] for sample in belief.samples])
     M = len(curr_w)
     w_dim = len(curr_w[0])
@@ -43,12 +43,8 @@ def update_belief_inquire(queries, responses, belief, true_user):
 
     # match the responses to the queries
     queries_with_responses = []
-    for query in queries:
-        for response in responses:
-            if query["id"] == response["id"]:
-                queries_with_responses.append(
-                    aprel.Preference(query["query"], response["preference"])
-                )
+    for i, query in enumerate(queries):
+        queries_with_responses.append(aprel.Preference(query, responses[i]))
     # if queries_with_responses doesn't contain all the queries, raise an error
     if len(queries_with_responses) != len(queries):
         raise ValueError("Not all queries have been responded to.")
@@ -58,21 +54,15 @@ def update_belief_inquire(queries, responses, belief, true_user):
         rand,
         queries_with_responses,
         1,
+        # 0.8,
         w_dim,
         M,
-        # prev_w=curr_w, TODO: see if this improves performance
+        # prev_w=curr_w,  # TODO: see if this improves performance
     )
     t_e = time.time()
     print("Time to update belief: ", t_e - t_s)
 
     # Report the metrics
-    print("Number of queries: " + str(len(queries)))
-    print("Estimated user parameters: " + str(belief.mean))
-    if is_simulated_user:
-        cos_sim = aprel.cosine_similarity(belief, true_user)
-        print("Actual user parameters: " + str(true_user.params["weights"]))
-        print("Cosine Similarity: " + str(cos_sim))
-
     belief.samples = [{"weights": w} for w in w_opt]
 
     return belief
@@ -87,6 +77,8 @@ def main():
     # Create the OpenAI Gym environment
     gym_env = gym.make("MountainCarContinuous-v0")
 
+    use_inquire = True
+
     # Seed for reproducibility
     seed = 0
     np.random.seed(seed)
@@ -95,16 +87,16 @@ def main():
     # Wrap the environment with a feature function
     env = aprel.GymEnvironment(gym_env, feature_func)
 
-    num_trajectories = 10
-    max_episode_length = 100
-    num_iterations = 10
+    num_trajectories = 100
+    max_episode_length = 300
+    num_iterations = 20
     num_samples = 100
     burnin = 200
     thin = 20
     proposal_distribution = aprel.gaussian_proposal
 
     # Create a trajectory set
-    trajectory_set = aprel.generate_trajectories_randomly(
+    trajectory_set = aprel.generate_trajectories_randomly_gym(
         env,
         num_trajectories=num_trajectories,
         max_episode_length=max_episode_length,
@@ -113,6 +105,69 @@ def main():
         headless=True,
         seed=seed,
     )
+
+    # plot the trajectory set feature differences
+
+    trajectories = trajectory_set.trajectories
+
+    trajectory_features = [trajectory.features for trajectory in trajectories]
+
+    # normalize the features
+    mean = np.mean(trajectory_features, axis=0)
+    std = np.std(trajectory_features, axis=0)
+    for trajectory in trajectories:
+        trajectory.features = (trajectory.features - mean) / std
+
+    # remake the trajectory set
+    trajectory_set = aprel.TrajectorySet(trajectories)
+
+    # Compute the query set
+    subsets = np.array(
+        [list(tup) for tup in itertools.combinations(np.arange(len(trajectories)), 2)]
+    )
+
+    # Compute the feature differences for each query
+    feature_differences = []
+    colors = []
+    # for subset in subsets:
+    #     feat_diff = trajectories[subset[0]].features - trajectories[subset[1]].features
+    #     feature_differences.append(feat_diff)
+    #     if subset[0] in bad_idx or subset[1] in bad_idx:
+    #         colors.append("r")
+    #     else:
+    #         colors.append("b")
+    # feature_differences = np.array(feature_differences)
+
+    # discard the bad trajectories
+    for subset in subsets:
+        feat_diff = trajectories[subset[0]].features - trajectories[subset[1]].features
+        feature_differences.append(feat_diff)
+        colors.append("b")
+    feature_differences = np.array(feature_differences)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+    ax.scatter(
+        feature_differences[:, 0],
+        feature_differences[:, 1],
+        feature_differences[:, 2],
+        c=colors,
+        marker="o",
+        s=1,
+        label="3 features",
+    )
+
+    # labels
+    ax.set_xlabel("Feature Difference 1")
+    ax.set_ylabel("Feature Difference 2")
+    ax.set_zlabel("Feature Difference 3")
+
+    # make plot square with equal axes, centered at (0,0)
+    ax.axis("square")
+
+    # save plot
+    plt.savefig("feature_differences_test_mountain_car.png", dpi=300)
+
     features_dim = len(trajectory_set[0].features)
 
     # Initialize the query optimizer
@@ -142,41 +197,44 @@ def main():
     cos_sim = aprel.cosine_similarity(belief, true_user)
     print("Cosine Similarity: " + str(cos_sim))
 
-    # Initialize a dummy query so that the query optimizer will generate queries of the same kind
-    query = aprel.PreferenceQuery(trajectory_set[:2])
+    queries = []
+    responses = []
 
     # Active learning loop
     for query_no in range(num_iterations):
         # Optimize the query
-        # queries, objective_values = query_optimizer.optimize(
-        #     args["acquisition"],
-        #     belief,
-        #     query,
-        #     batch_size=args["batch_size"],
-        #     optimization_method=args["optim_method"],
-        #     reduced_size=args["reduced_size_for_batches"],
-        #     gamma=args["dpp_gamma"],
-        #     distance=args["distance_metric_for_batches"],
-        # )
-        queries, objective_values = find_next_queries_inquire(belief, trajectory_set)
-        print("Objective Values: " + str(objective_values))
+        if use_inquire:
+            query, objective_values = find_next_queries_inquire(belief, trajectory_set)
+        else:
+            query, objective_values = query_optimizer.optimize(
+                "mutual_information",
+                belief,
+                aprel.PreferenceQuery(trajectory_set[:2]),
+                batch_size=1,
+                optimization_method="exhaustive_search",
+                reduced_size=100,
+                gamma=1,
+                distance=aprel.default_query_distance,
+            )
 
         # Ask the query to the human
-        responses = true_user.respond(queries)
+        response = true_user.respond(query)
 
-        # Update the belief distribution
-        # belief.update(
-        #     [
-        #         aprel.Preference(query, response)
-        #         for query, response in zip(queries, responses)
-        #     ]
-        # )
+        query = query[0]
+        response = response[0]
 
-        belief = update_belief_inquire(queries, responses, belief, true_user)
+        queries.append(query)
+        responses.append(response)
+        print("Number of queries: " + str(len(queries)))
+
+        if use_inquire:
+            belief = update_belief_inquire(queries, responses, belief, true_user)
+        else:
+            # Update the belief distribution
+            belief.update([aprel.Preference(query, response)])
 
         # Report the metrics
         print("Estimated user parameters: " + str(belief.mean))
-
         cos_sim = aprel.cosine_similarity(belief, true_user)
         print("Cosine Similarity: " + str(cos_sim))
 

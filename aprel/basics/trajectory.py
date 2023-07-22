@@ -4,7 +4,7 @@ from typing import List, Tuple, Union
 import numpy as np
 from moviepy.editor import VideoFileClip
 
-# from aprel.basics import Environment
+from aprel.basics import GymEnvironment
 
 
 class Trajectory:
@@ -71,6 +71,61 @@ class Trajectory:
         else:
             print("Headless mode is on.")
             # print(self.trajectory)
+
+
+class TrajectoryGym:
+    """
+    A class for keeping trajectories that consist of a sequence of state-action pairs,
+    the features and a clip path that keeps a video visualization of the trajectory.
+
+    This class supports indexing, such that t^th index returns the state-action pair at time
+    step t. However, indices cannot be assigned, i.e., a specific state-action pair cannot be
+    changed, because that would enable infeasible trajectories.
+
+    Parameters:
+        env (Environment): The environment object that generated this trajectory.
+        trajectory (List[Tuple[numpy.array, numpy.array]]): The sequence of state-action pairs.
+        clip_path (str): The path to the video clip that keeps the visualization of the trajectory.
+
+    Attributes:
+        trajectory (List[Tuple[numpy.array, numpy.array]]): The sequence of state-action pairs.
+        features (numpy.array): Features of the trajectory.
+        clip_path (str): The path to the video clip that keeps the visualization of the trajectory.
+    """
+
+    def __init__(
+        self,
+        env: GymEnvironment,
+        trajectory: List[Tuple[np.array, np.array]],
+        clip_path: str = None,
+    ):
+        self.trajectory = trajectory
+        self.features = env.features(trajectory)
+        self.clip_path = clip_path
+
+    def __getitem__(self, t: int) -> Tuple[np.array, np.array]:
+        """Returns the state-action pair at time step t of the trajectory."""
+        return self.trajectory[t]
+
+    @property
+    def length(self) -> int:
+        """The length of the trajectory, i.e., the number of time steps in the trajectory."""
+        return len(self.trajectory)
+
+    def visualize(self):
+        """
+        Visualizes the trajectory with a video if the clip exists. Otherwise, prints the trajectory information.
+
+        :Note: FPS is fixed at 25 for video visualizations.
+        """
+        if self.clip_path is not None:
+            clip = VideoFileClip(self.clip_path)
+            clip.preview(fps=30)
+            clip.close()
+        else:
+            print("Headless mode is on. Printing the trajectory information.")
+            # print(self.trajectory)
+            print("Features for this trajectory are: " + str(self.features))
 
 
 class TrajectorySet:

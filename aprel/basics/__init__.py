@@ -1,2 +1,2 @@
-from .environment import Environment
-from .trajectory import Trajectory, TrajectorySet
+from .environment import Environment, GymEnvironment
+from .trajectory import Trajectory, TrajectorySet, TrajectoryGym

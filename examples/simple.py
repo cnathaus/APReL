@@ -1,16 +1,12 @@
 import aprel
 import numpy as np
-import gymnasium as gym
+import gym
 
 env_name = "MountainCarContinuous-v0"
-gym_env = gym.make(env_name, render_mode="rgb_array")
+gym_env = gym.make(env_name)
 
 np.random.seed(0)
-gym_env.reset(seed=0)
-
-# Observation and action space
-obs_space = gym_env.observation_space
-action_space = gym_env.action_space
+gym_env.seed(0)
 
 
 def feature_func(traj):
@@ -31,16 +27,20 @@ def feature_func(traj):
     return (np.array([min_pos, max_pos, mean_speed]) - mean_vec) / std_vec
 
 
-env = aprel.Environment(gym_env, feature_func)
+env = aprel.GymEnvironment(gym_env, feature_func)
 
-trajectory_set = aprel.generate_trajectories_randomly(
+trajectory_set = aprel.generate_trajectories_randomly_gym(
     env, num_trajectories=10, max_episode_length=300, file_name=env_name, seed=0
 )
 features_dim = len(trajectory_set[0].features)
 
 query_optimizer = aprel.QueryOptimizerDiscreteTrajectorySet(trajectory_set)
 
-true_user = aprel.HumanUser(delay=0.5)
+# true_user = aprel.HumanUser(delay=0.5)
+
+# Initialize the object for the true human
+true_params = {"weights": aprel.util_funs.get_random_normalized_vector(features_dim)}
+true_user = aprel.SoftmaxUser(true_params)
 
 params = {"weights": aprel.util_funs.get_random_normalized_vector(features_dim)}
 user_model = aprel.SoftmaxUser(params)
@@ -58,3 +58,6 @@ for query_no in range(10):
     responses = true_user.respond(queries[0])
     belief.update(aprel.Preference(queries[0], responses[0]))
     print("Estimated user parameters: " + str(belief.mean))
+
+    cos_sim = aprel.cosine_similarity(belief, true_user)
+    print("Cosine Similarity: " + str(cos_sim))

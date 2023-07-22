@@ -79,10 +79,10 @@ class GymEnvironment(Wrapper):
         self.features = feature_func
 
         # Mirror the main functionality
-        # self.action_space = self.env.action_space
-        # self.observation_space = self.env.observation_space
-        # self.reset = self.env.reset
-        # self.step = self.env.step
+        self.action_space = self.env.action_space
+        self.observation_space = self.env.observation_space
+        self.reset = self.env.reset
+        self.step = self.env.step
 
         # Mirror the render function only if it exists
         # self.render_exists = callable(getattr(self.env, "render", None))

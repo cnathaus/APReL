@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "num_feature_dims_parameter_estimation",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/experiments/num_feature_dims/num_feature_dims_parameter_estimation.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
+}

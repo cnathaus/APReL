@@ -176,7 +176,9 @@ class SoftmaxUser(User):
             "weights" in params_dict
         ), "weights is a required parameter for the softmax user model."
         params_dict_copy = params_dict.copy()
-        params_dict_copy.setdefault("beta", 1.0)
+        # params_dict_copy.setdefault("beta", 1.0)
+        # TODO: CHANGE BACK!!!
+        params_dict_copy.setdefault("beta", 20)
         params_dict_copy.setdefault("beta_D", 1.0)
         params_dict_copy.setdefault("delta", 0.1)
 

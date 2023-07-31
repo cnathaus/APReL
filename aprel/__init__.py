@@ -1,7 +1,7 @@
 from aprel.assessing.metrics import cosine_similarity
 
 from aprel.basics.environment import Environment, GymEnvironment
-from aprel.basics.trajectory import Trajectory, TrajectorySet
+from aprel.basics.trajectory import Trajectory, TrajectorySet, TrajectoryGym
 
 from aprel.learning.data_types import Query, QueryWithResponse
 from aprel.learning.data_types import DemonstrationQuery, Demonstration
@@ -11,10 +11,23 @@ from aprel.learning.data_types import FullRankingQuery, FullRanking
 from aprel.learning.user_models import User, SoftmaxUser, HumanUser
 from aprel.learning.belief_models import Belief, LinearRewardBelief, SamplingBasedBelief
 
-from aprel.querying.acquisition_functions import mutual_information, volume_removal, disagreement, regret, random, thompson
-from aprel.querying.query_optimizer import QueryOptimizer, QueryOptimizerDiscreteTrajectorySet
+from aprel.querying.acquisition_functions import (
+    mutual_information,
+    volume_removal,
+    disagreement,
+    regret,
+    random,
+    thompson,
+)
+from aprel.querying.query_optimizer import (
+    QueryOptimizer,
+    QueryOptimizerDiscreteTrajectorySet,
+)
 
-from aprel.utils.generate_trajectories import generate_trajectories_randomly, generate_trajectories_randomly_gym
+from aprel.utils.generate_trajectories import (
+    generate_trajectories_randomly,
+    generate_trajectories_randomly_gym,
+)
 from aprel.utils.sampling_utils import uniform_logprior, gaussian_proposal
 from aprel.utils.kmedoids import kMedoids
 from aprel.utils.dpp import dpp_mode
